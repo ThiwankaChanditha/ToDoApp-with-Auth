@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LineChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-chart-kit';
 import { TaskContext } from '../context/TaskContext'; 
 
 const StatScreen = ({ navigation }) => {
@@ -10,7 +10,6 @@ const StatScreen = ({ navigation }) => {
         completed: 0,
         uncompleted: 0,
         categories: {},
-        tasksByDate: {},
     });
     const screenWidth = Dimensions.get('window').width;
 
@@ -21,21 +20,8 @@ const StatScreen = ({ navigation }) => {
                 const uncompletedTasks = tasks.filter(task => !task.completed).length;
 
                 const categories = tasks.reduce((acc, task) => {
-                    if (task.category) {
-                        acc[task.category] = (acc[task.category] || 0) + 1;
-                    }
-                    return acc;
-                }, {});
-
-                // Count tasks by date, ensuring valid dates
-                const tasksByDate = tasks.reduce((acc, task) => {
-                    if (task.created_at) {
-                        const taskDate = new Date(task.created_at);
-                        if (!isNaN(taskDate.getTime())) { // Check if the date is valid
-                            const formattedDate = taskDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-                            acc[formattedDate] = (acc[formattedDate] || 0) + 1;
-                        }
-                    }
+                    const category = task.category || 'undefined';  // Default to 'undefined' if no category
+                    acc[category] = (acc[category] || 0) + 1;
                     return acc;
                 }, {});
 
@@ -43,7 +29,6 @@ const StatScreen = ({ navigation }) => {
                     completed: completedTasks,
                     uncompleted: uncompletedTasks,
                     categories,
-                    tasksByDate,
                 });
             }
         });
@@ -55,31 +40,20 @@ const StatScreen = ({ navigation }) => {
         navigation.navigate('CompletedTask', { tasks });
     };
 
-    // Get the task counts for each day of the week
-    const getTasksForLastWeek = () => {
-        const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const now = new Date();
-        const oneWeekAgo = new Date(now.setDate(now.getDate() - 6)); // Get the date 6 days ago
-
-        const tasksCount = daysOfWeek.map((_, i) => {
-            const day = new Date(oneWeekAgo);
-            day.setDate(oneWeekAgo.getDate() + i);
-            const dayString = day.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-            return taskStats.tasksByDate[dayString] || 0; // Get the task count for this date or 0 if none
-        });
-
-        return {
-            labels: daysOfWeek,
-            datasets: [
-                {
-                    data: tasksCount,
-                    strokeWidth: 2,
-                },
-            ],
-        };
+    const getCategoryDataForPieChart = () => {
+        const categories = taskStats.categories;
+        const colors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b', '#9c27b0', '#e91e63', '#00bcd4', '#ff9800'];
+        
+        return Object.entries(categories).map(([category, count], index) => ({
+            name: category,
+            population: count,
+            color: colors[index % colors.length],
+            legendFontColor: '#333',
+            legendFontSize: 15,
+        }));
     };
 
-    const data = getTasksForLastWeek();
+    const pieChartData = getCategoryDataForPieChart();
 
     return (
         <View style={styles.container}>
@@ -92,37 +66,19 @@ const StatScreen = ({ navigation }) => {
             <Text style={styles.stat}>Uncompleted Tasks: {taskStats.uncompleted}</Text>
 
             <Text style={styles.subtitle}>Tasks by Category:</Text>
-            <FlatList
-                data={Object.entries(taskStats.categories)}
-                keyExtractor={item => item[0]}
-                renderItem={({ item }) => (
-                    <View style={styles.categoryItem}>
-                        <Text style={styles.categoryText}>{item[0]}: {item[1]}</Text>
-                    </View>
-                )}
-            />
-
-            <Text style={styles.subtitle}>Tasks Added This Week:</Text>
-            <LineChart
-                data={data}
+            <PieChart
+                data={pieChartData}
                 width={screenWidth - 40}
                 height={220}
                 chartConfig={{
-                    backgroundColor: '#e26a00',
-                    backgroundGradientFrom: '#fb8c00',
-                    backgroundGradientTo: '#ffa726',
-                    decimalPlaces: 0,
                     color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                    style: {
-                        borderRadius: 16,
-                    },
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    backgroundColor: '#fff',
                 }}
-                bezier
-                style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                }}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
+                absolute // Displays percentages
             />
         </View>
     );
@@ -148,15 +104,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginTop: 20,
         marginBottom: 10,
-    },
-    categoryItem: {
-        padding: 10,
-        backgroundColor: 'white',
-        marginBottom: 5,
-        borderRadius: 5,
-    },
-    categoryText: {
-        fontSize: 16,
     },
     eyeIcon: {
         flexDirection: 'row',

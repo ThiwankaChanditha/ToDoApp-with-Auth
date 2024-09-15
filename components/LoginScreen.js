@@ -32,21 +32,24 @@ const LoginScreen = () => {
    
     const handleSignUp = async () => {
         try {
-            const { user, error } = await supabase.auth.signUp({ email, password });
+            const { data, error } = await supabase.auth.signUp({ email, password });
             if (error) throw error;
-            console.log('Signed up with:', user.email);
+            if (data && data.user) {
+                console.log('Signed up with:', data.user.email);
+            }
         } catch (error) {
             alert(error.message);
         }
     };
-
     
     const handleLogin = async () => {
         try {
-            const { user, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
-            console.log('Logged in with:', user.email);
-            navigation.navigate("TaskList"); 
+            if (data && data.user) {
+                console.log('Logged in with:', data.user.email);
+                navigation.navigate("TaskList"); 
+            }
         } catch (error) {
             alert(error.message);
         }

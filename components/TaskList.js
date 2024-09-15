@@ -2,15 +2,14 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, CheckBox, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { TaskContext } from '../context/TaskContext';
+import { TaskContext } from '../context/TaskContext'; 
 
 const screenHeight = Dimensions.get('window').height;
 const ListHeight = screenHeight * 0.6;
 
 const TaskList = ({ route }) => {
     const navigation = useNavigation();
-    const { tasks, setTasks } = useContext(TaskContext); 
-    const [pinnedTasks, setPinnedTasks] = useState([]);
+    const { tasks, setTasks, pinnedTasks, pinTask } = useContext(TaskContext); 
 
     useEffect(() => {
         if (route.params?.newTask) {
@@ -32,11 +31,7 @@ const TaskList = ({ route }) => {
     };
 
     const handlePinTask = (task) => {
-        if (pinnedTasks.find(t => t.id === task.id)) {
-            setPinnedTasks(pinnedTasks.filter(t => t.id !== task.id));
-        } else {
-            setPinnedTasks([...pinnedTasks, task]);
-        }
+        pinTask(task); 
     };
 
     const handleDeleteTask = (taskId) => {
@@ -61,7 +56,7 @@ const TaskList = ({ route }) => {
                     <Text style={styles.icon}>📊</Text> 
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigation.navigate('PinnedScreen', { pinnedTasks })}>
+                <TouchableOpacity onPress={() => navigation.navigate('PinnedScreen')}>
                     <Text style={styles.icon}>📌</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={searchTask}>
@@ -69,13 +64,13 @@ const TaskList = ({ route }) => {
                 </TouchableOpacity>
             </View>
             <FlatList
-                style={{height: ListHeight}}
+                style={{ height: ListHeight }}
                 data={tasks}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                     <View style={styles.taskItem}>
                       <CheckBox
-                        style={{marginRight:10}}
+                        style={{ marginRight: 10 }}
                         value={item.completed}
                         onValueChange={() => handleCompleteTask(item.id)}
                       />

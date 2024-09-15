@@ -1,15 +1,25 @@
-// TaskContext.js
 import React, { createContext, useState } from 'react';
 
-// Create the context
 export const TaskContext = createContext();
 
-// Create the provider component
 export const TaskProvider = ({ children }) => {
     const [tasks, setTasks] = useState([]);
+    const [pinnedTasks, setPinnedTasks] = useState([]);
+
+    const pinTask = (task) => {
+        if (pinnedTasks.find(t => t.id === task.id)) {
+            setPinnedTasks(pinnedTasks.filter(t => t.id !== task.id));
+        } else {
+            setPinnedTasks([...pinnedTasks, task]); 
+        }
+    };
+
+    const unpinTask = (taskId) => {
+        setPinnedTasks(pinnedTasks.filter(task => task.id !== taskId)); 
+    };
 
     return (
-        <TaskContext.Provider value={{ tasks, setTasks }}>
+        <TaskContext.Provider value={{ tasks, setTasks, pinnedTasks, pinTask, unpinTask }}>
             {children}
         </TaskContext.Provider>
     );
